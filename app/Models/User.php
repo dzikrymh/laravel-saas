@@ -3,13 +3,31 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Filament\Models\Contracts\HasAvatar;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Storage;
 
-class User extends Authenticatable
+class User extends Authenticatable implements HasAvatar
 {
-    use HasFactory, Notifiable;
+    use HasFactory,
+        Notifiable,
+        SoftDeletes,
+        HasUuids;
+
+    protected static function boot(): void
+    {
+        parent::boot();
+
+        static::updating(function ($model) {
+            if ($model->isDirty('avatar') && ($model->getOriginal('avatar') !== null)) {
+                Storage::disk('public')->delete($model->getOriginal('avatar'));
+            }
+        });
+    }
 
     /**
      * The attributes that are mass assignable.
@@ -20,6 +38,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'avatar',
     ];
 
     /**
@@ -43,5 +62,10 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    public function getFilamentAvatarUrl(): ?string
+    {
+        return $this->avatar ? Storage::url($this->avatar) : null ;
     }
 }
