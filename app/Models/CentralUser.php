@@ -2,35 +2,23 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
-use Filament\Models\Contracts\HasAvatar;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Foundation\Auth\User as Authenticatable;
-use Illuminate\Notifications\Notifiable;
-use Illuminate\Support\Facades\Storage;
-use Stancl\Tenancy\Contracts\Syncable;
+use Stancl\Tenancy\Contracts\SyncMaster;
+use Stancl\Tenancy\Database\Concerns\CentralConnection;
 use Stancl\Tenancy\Database\Concerns\ResourceSyncing;
+use Stancl\Tenancy\Database\Models\TenantPivot;
 
-class User extends Authenticatable implements HasAvatar, Syncable
+class CentralUser extends Model implements SyncMaster
 {
-    use HasFactory,
-        Notifiable,
+    use ResourceSyncing,
+        CentralConnection,
         SoftDeletes,
-        HasUuids,
-        ResourceSyncing;
+        HasUuids;
 
-    protected static function boot(): void
-    {
-        parent::boot();
-
-        static::updating(function ($model) {
-            if ($model->isDirty('avatar') && ($model->getOriginal('avatar') !== null)) {
-                Storage::disk('public')->delete($model->getOriginal('avatar'));
-            }
-        });
-    }
+    public $table = 'users';
 
     /**
      * The attributes that are mass assignable.
@@ -68,9 +56,15 @@ class User extends Authenticatable implements HasAvatar, Syncable
         ];
     }
 
-    public function getFilamentAvatarUrl(): ?string
+    public function tenants(): BelongsToMany
     {
-        return $this->avatar ? Storage::url($this->avatar) : null ;
+        return $this->belongsToMany(Tenant::class, 'tenant_users', 'global_user_id', 'tenant_id', 'global_id')
+            ->using(TenantPivot::class);
+    }
+
+    public function getTenantModelName(): string
+    {
+        return User::class;
     }
 
     public function getGlobalIdentifierKey()
@@ -85,7 +79,7 @@ class User extends Authenticatable implements HasAvatar, Syncable
 
     public function getCentralModelName(): string
     {
-        return CentralUser::class;
+        return static::class;
     }
 
     public function getSyncedAttributeNames(): array
@@ -96,7 +90,7 @@ class User extends Authenticatable implements HasAvatar, Syncable
             'email',
             'password',
             'avatar',
-            'deleted_at',
+            'deleted_at'
         ];
     }
 }
