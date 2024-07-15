@@ -2,16 +2,21 @@
 
 namespace App\Models;
 
+use Filament\Models\Contracts\FilamentUser;
+use Filament\Models\Contracts\HasAvatar;
+use Filament\Panel;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Support\Facades\Storage;
 use Stancl\Tenancy\Contracts\SyncMaster;
 use Stancl\Tenancy\Database\Concerns\CentralConnection;
 use Stancl\Tenancy\Database\Concerns\ResourceSyncing;
 use Stancl\Tenancy\Database\Models\TenantPivot;
 
-class CentralUser extends Model implements SyncMaster
+class CentralUser extends Authenticatable implements SyncMaster, HasAvatar
 {
     use ResourceSyncing,
         CentralConnection,
@@ -54,6 +59,11 @@ class CentralUser extends Model implements SyncMaster
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    public function getFilamentAvatarUrl(): ?string
+    {
+        return $this->avatar ? Storage::url($this->avatar) : null ;
     }
 
     public function tenants(): BelongsToMany
