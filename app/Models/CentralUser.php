@@ -6,22 +6,34 @@ use Filament\Models\Contracts\FilamentUser;
 use Filament\Models\Contracts\HasAvatar;
 use Filament\Panel;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Support\Facades\Storage;
+use Jeffgreco13\FilamentBreezy\Traits\TwoFactorAuthenticatable;
 use Stancl\Tenancy\Contracts\SyncMaster;
 use Stancl\Tenancy\Database\Concerns\CentralConnection;
 use Stancl\Tenancy\Database\Concerns\ResourceSyncing;
 use Stancl\Tenancy\Database\Models\TenantPivot;
 
-class CentralUser extends Authenticatable implements SyncMaster, HasAvatar
+class CentralUser extends Authenticatable implements SyncMaster, HasAvatar, FilamentUser
 {
     use ResourceSyncing,
         CentralConnection,
         SoftDeletes,
-        HasUuids;
+        HasUuids,
+        TwoFactorAuthenticatable;
+
+    protected static function boot(): void
+    {
+        parent::boot();
+
+        static::updating(function ($model) {
+            if ($model->isDirty('avatar') && ($model->getOriginal('avatar') !== null)) {
+                Storage::disk('public')->delete($model->getOriginal('avatar'));
+            }
+        });
+    }
 
     public $table = 'users';
 
@@ -64,6 +76,11 @@ class CentralUser extends Authenticatable implements SyncMaster, HasAvatar
     public function getFilamentAvatarUrl(): ?string
     {
         return $this->avatar ? Storage::url($this->avatar) : null ;
+    }
+
+    public function canAccessPanel(Panel $panel): bool
+    {
+        return true;
     }
 
     public function tenants(): BelongsToMany

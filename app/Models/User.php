@@ -3,23 +3,28 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+
+use Filament\Models\Contracts\FilamentUser;
 use Filament\Models\Contracts\HasAvatar;
+use Filament\Panel;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\Storage;
+use Jeffgreco13\FilamentBreezy\Traits\TwoFactorAuthenticatable;
 use Stancl\Tenancy\Contracts\Syncable;
 use Stancl\Tenancy\Database\Concerns\ResourceSyncing;
 
-class User extends Authenticatable implements HasAvatar, Syncable
+class User extends Authenticatable implements HasAvatar, Syncable, FilamentUser
 {
     use HasFactory,
         Notifiable,
         SoftDeletes,
         HasUuids,
-        ResourceSyncing;
+        ResourceSyncing,
+        TwoFactorAuthenticatable;
 
     protected static function boot(): void
     {
@@ -71,6 +76,11 @@ class User extends Authenticatable implements HasAvatar, Syncable
     public function getFilamentAvatarUrl(): ?string
     {
         return $this->avatar ? Storage::url($this->avatar) : null ;
+    }
+
+    public function canAccessPanel(Panel $panel): bool
+    {
+        return true;
     }
 
     public function getGlobalIdentifierKey()

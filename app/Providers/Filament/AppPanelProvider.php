@@ -2,7 +2,8 @@
 
 namespace App\Providers\Filament;
 
-use App\Filament\Pages\Auth\Register;
+use App\Livewire\DeleteMyAccountComponent;
+use Filament\Forms\Components\FileUpload;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
@@ -17,7 +18,9 @@ use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\AuthenticateSession;
 use Illuminate\Session\Middleware\StartSession;
+use Illuminate\Validation\Rules\Password;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
+use Jeffgreco13\FilamentBreezy\BreezyCore;
 use Stancl\Tenancy\Middleware\InitializeTenancyByDomain;
 use Stancl\Tenancy\Middleware\PreventAccessFromCentralDomains;
 
@@ -60,6 +63,25 @@ class AppPanelProvider extends PanelProvider
             ])
             ->authMiddleware([
                 Authenticate::class,
+            ])
+            ->plugins([
+                BreezyCore::make()
+                ->myProfile(
+                    hasAvatars: true,
+                )
+                ->avatarUploadComponent(fn() => FileUpload::make('avatar')
+                    ->directory('avatars')
+                    ->label('Avatar')
+                    ->image()
+                    ->avatar()
+                )
+                ->passwordUpdateRules(
+                    rules: [Password::default()->mixedCase()->uncompromised(3)],
+                )
+                ->enableTwoFactorAuthentication()
+                ->myProfileComponents([
+                    DeleteMyAccountComponent::class,
+                ]),
             ]);
     }
 }
