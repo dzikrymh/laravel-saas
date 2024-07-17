@@ -17,7 +17,7 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $tenant = Tenant::create(['id' => 'central']);
-        $tenant->domains()->create(['domain' => 'saas.test']);
+        $tenant->domains()->create(['domain' => config('app.central_domain')]);
 
         $user = CentralUser::create([
             'global_id' => Str::orderedUuid(),

@@ -31,6 +31,10 @@ class CreateFrameworkDirectoriesForTenant implements ShouldQueue
         $this->tenant->run(function ($tenant) {
             $storage_path = storage_path();
 
+            // check if the directories exist before creating them
+            if (is_dir("$storage_path/app/public") || is_dir("$storage_path/framework/cache")) {
+                return;
+            }
             mkdir("$storage_path/app/public", 0777, true);
             mkdir("$storage_path/framework/cache", 0777, true);
         });
