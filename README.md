@@ -8,6 +8,9 @@
 <a href="https://github.com/TheBSD/StandWithPalestine/blob/main/docs/README.md"><img src="https://raw.githubusercontent.com/TheBSD/StandWithPalestine/main/badges/StandWithPalestine.svg" alt="License"></a>
 </p>
 
+## About Application
+An application is a multi-tenant application that allows you to create multiple tenants and manage them. Each tenant can have one database and each database can have multiple users. The application is built using Laravel 11, Stancl/Multi-tenant and Filament 3.
+
 ## Installation
 
 1. Clone env file
