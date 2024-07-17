@@ -65,15 +65,7 @@ class AdminPanelProvider extends PanelProvider
             ->default(true)
             ->plugins([
                 BreezyCore::make()
-                    ->myProfile(
-                        hasAvatars: true,
-                    )
-                    ->avatarUploadComponent(fn() => FileUpload::make('avatar')
-                        ->directory('avatars')
-                        ->label('Avatar')
-                        ->image()
-                        ->avatar()
-                    )
+                    ->myProfile()
                     ->passwordUpdateRules(
                         rules: [Password::default()->mixedCase()->uncompromised(3)],
                     )

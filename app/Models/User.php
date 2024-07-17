@@ -73,16 +73,30 @@ class User extends Authenticatable implements HasAvatar, Syncable, FilamentUser
         ];
     }
 
-    public function getFilamentAvatarUrl(): ?string
+    protected $appends = [
+        'avatar_path',
+    ];
+
+    public function getAvatarPathAttribute(): ?string
     {
-        return $this->avatar ? Storage::url($this->avatar) : null ;
+        return $this->attributes['avatar'] ? tenant_asset($this->attributes['avatar']) : null;
     }
 
+    /** Avatar */
+    public function getFilamentAvatarUrl(): ?string
+    {
+        return $this->avatar ? tenant_asset($this->avatar) : null ;
+    }
+
+
+    /** FilamentUser */
     public function canAccessPanel(Panel $panel): bool
     {
         return true;
     }
 
+
+    /** Syncable */
     public function getGlobalIdentifierKey()
     {
         return $this->getAttribute($this->getGlobalIdentifierKeyName());
@@ -101,12 +115,11 @@ class User extends Authenticatable implements HasAvatar, Syncable, FilamentUser
     public function getSyncedAttributeNames(): array
     {
         return [
+            'global_id',
             'id',
             'name',
             'email',
             'password',
-            'avatar',
-            'deleted_at',
         ];
     }
 }

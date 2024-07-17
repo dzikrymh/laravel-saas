@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use App\Jobs\CreateFrameworkDirectoriesForTenant;
+use Illuminate\Contracts\Http\Kernel;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
@@ -30,6 +32,7 @@ class TenancyServiceProvider extends ServiceProvider
                 JobPipeline::make([
                     Jobs\CreateDatabase::class,
                     Jobs\MigrateDatabase::class,
+                    CreateFrameworkDirectoriesForTenant::class,
                     // Jobs\SeedDatabase::class,
 
                     // Your own jobs to prepare the tenant.
@@ -104,13 +107,12 @@ class TenancyServiceProvider extends ServiceProvider
     {
         $this->bootEvents();
         $this->mapRoutes();
-        $this->bootLiveware();
+        $this->makeTenancyMiddlewareHighestPriority();
 
-        \Stancl\Tenancy\Middleware\InitializeTenancyByDomain::$onFail = function () {
+        $this->tenancyLivewire();
+        InitializeTenancyByDomain::$onFail = function () {
             return abort(404);
         };
-
-        $this->makeTenancyMiddlewareHighestPriority();
     }
 
     protected function bootEvents(): void
@@ -136,8 +138,12 @@ class TenancyServiceProvider extends ServiceProvider
         });
     }
 
-    protected function bootLiveware(): void
+    protected function tenancyLivewire(): void
     {
+        FilePreviewController::$middleware = [
+            'web',
+            InitializeTenancyByDomain::class,
+        ];
         Livewire::setUpdateRoute(function ($handle) {
             return Route::post('/livewire/update', $handle)
                 ->middleware(
@@ -145,7 +151,6 @@ class TenancyServiceProvider extends ServiceProvider
                     InitializeTenancyByDomain::class, // or whatever tenancy middleware you use
                 );
         });
-        FilePreviewController::$middleware = ['web', InitializeTenancyByDomain::class];
     }
 
     protected function makeTenancyMiddlewareHighestPriority(): void
@@ -154,7 +159,7 @@ class TenancyServiceProvider extends ServiceProvider
             // Even higher priority than the initialization middleware
             Middleware\PreventAccessFromCentralDomains::class,
 
-            Middleware\InitializeTenancyByDomain::class,
+            InitializeTenancyByDomain::class,
             Middleware\InitializeTenancyBySubdomain::class,
             Middleware\InitializeTenancyByDomainOrSubdomain::class,
             Middleware\InitializeTenancyByPath::class,
@@ -162,7 +167,7 @@ class TenancyServiceProvider extends ServiceProvider
         ];
 
         foreach (array_reverse($tenancyMiddleware) as $middleware) {
-            $this->app[\Illuminate\Contracts\Http\Kernel::class]->prependToMiddlewarePriority($middleware);
+            $this->app[Kernel::class]->prependToMiddlewarePriority($middleware);
         }
     }
 }

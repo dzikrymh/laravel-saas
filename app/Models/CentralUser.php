@@ -3,37 +3,24 @@
 namespace App\Models;
 
 use Filament\Models\Contracts\FilamentUser;
-use Filament\Models\Contracts\HasAvatar;
 use Filament\Panel;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
-use Illuminate\Support\Facades\Storage;
 use Jeffgreco13\FilamentBreezy\Traits\TwoFactorAuthenticatable;
 use Stancl\Tenancy\Contracts\SyncMaster;
 use Stancl\Tenancy\Database\Concerns\CentralConnection;
 use Stancl\Tenancy\Database\Concerns\ResourceSyncing;
 use Stancl\Tenancy\Database\Models\TenantPivot;
 
-class CentralUser extends Authenticatable implements SyncMaster, HasAvatar, FilamentUser
+class CentralUser extends Authenticatable implements SyncMaster, FilamentUser
 {
     use ResourceSyncing,
         CentralConnection,
         SoftDeletes,
         HasUuids,
         TwoFactorAuthenticatable;
-
-    protected static function boot(): void
-    {
-        parent::boot();
-
-        static::updating(function ($model) {
-            if ($model->isDirty('avatar') && ($model->getOriginal('avatar') !== null)) {
-                Storage::disk('public')->delete($model->getOriginal('avatar'));
-            }
-        });
-    }
 
     public $table = 'users';
 
@@ -47,7 +34,6 @@ class CentralUser extends Authenticatable implements SyncMaster, HasAvatar, Fila
         'name',
         'email',
         'password',
-        'avatar',
     ];
 
     /**
@@ -71,11 +57,6 @@ class CentralUser extends Authenticatable implements SyncMaster, HasAvatar, Fila
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
-    }
-
-    public function getFilamentAvatarUrl(): ?string
-    {
-        return $this->avatar ? Storage::url($this->avatar) : null ;
     }
 
     public function canAccessPanel(Panel $panel): bool
@@ -112,12 +93,11 @@ class CentralUser extends Authenticatable implements SyncMaster, HasAvatar, Fila
     public function getSyncedAttributeNames(): array
     {
         return [
+            'global_id',
             'id',
             'name',
             'email',
             'password',
-            'avatar',
-            'deleted_at'
         ];
     }
 }

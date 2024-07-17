@@ -2,6 +2,7 @@
 
 namespace App\Providers\Filament;
 
+use App\Filament\App\Pages\Auth\TenantLogin;
 use App\Livewire\DeleteMyAccountComponent;
 use Filament\Forms\Components\FileUpload;
 use Filament\Http\Middleware\Authenticate;
@@ -21,8 +22,10 @@ use Illuminate\Session\Middleware\StartSession;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 use Jeffgreco13\FilamentBreezy\BreezyCore;
+use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 use Stancl\Tenancy\Middleware\InitializeTenancyByDomain;
-use Stancl\Tenancy\Middleware\PreventAccessFromCentralDomains;
+
+use function Ramsey\Uuid\v7;
 
 class AppPanelProvider extends PanelProvider
 {
@@ -32,7 +35,7 @@ class AppPanelProvider extends PanelProvider
             ->id('app')
             ->path('app')
             ->authGuard('web')
-            ->login()
+            ->login(TenantLogin::class)
             ->colors([
                 'primary' => Color::Amber,
             ])
@@ -59,29 +62,35 @@ class AppPanelProvider extends PanelProvider
                 DispatchServingFilamentEvent::class,
 
                 InitializeTenancyByDomain::class,
-                PreventAccessFromCentralDomains::class,
             ])
             ->authMiddleware([
                 Authenticate::class,
             ])
             ->plugins([
                 BreezyCore::make()
-                ->myProfile(
-                    hasAvatars: true,
-                )
-                ->avatarUploadComponent(fn() => FileUpload::make('avatar')
-                    ->directory('avatars')
-                    ->label('Avatar')
-                    ->image()
-                    ->avatar()
-                )
-                ->passwordUpdateRules(
-                    rules: [Password::default()->mixedCase()->uncompromised(3)],
-                )
-                ->enableTwoFactorAuthentication()
-                ->myProfileComponents([
-                    DeleteMyAccountComponent::class,
-                ]),
+                    ->myProfile(
+                        hasAvatars: true,
+                    )
+                    ->avatarUploadComponent(function () {
+                        return FileUpload::make('avatar')
+                            ->directory('avatars')
+                            ->label('Avatar')
+                            ->image()
+                            ->avatar()
+                            ->getUploadedFileNameForStorageUsing(
+                                function (TemporaryUploadedFile $file): string {
+                                    return str(v7(now()))
+                                        ->append('.' . $file->getClientOriginalExtension());
+                                },
+                            );
+                    })
+                    ->passwordUpdateRules(
+                        rules: [Password::default()->mixedCase()->uncompromised(3)],
+                    )
+                    ->enableTwoFactorAuthentication()
+                    ->myProfileComponents([
+                        DeleteMyAccountComponent::class,
+                    ]),
             ]);
     }
 }
